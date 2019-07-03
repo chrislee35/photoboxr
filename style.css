@@ -1,0 +1,23 @@
+	BODY {
+		background-image: url("res/dark_embroidery.png");
+	}
+	div.box {
+		border: thin solid gray;
+		background-color: #eeeeff;
+		border: 20px;
+		clear: both;
+	}
+	div.item {
+		border: thin solid black;
+		background-color: #eeeeee;
+		width: 200px;
+		height: 150px;
+		text-align: center;
+		float: left;
+		position: relative;
+		padding-top: 40px;
+	}
+	IMG {
+	   border: 3px solid black;
+	}
+	

@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require 'photoboxr'
+
+inputpath, outputpath, fullpath = ARGV
+PhotoBoxr::Directory.set_config('process_videos', false)
+d = PhotoBoxr::Directory.new(inputpath, outputpath, fullpath)
+templates = PhotoBoxr::TemplateManager.get_templates('boring')
+d.generate(templates)
+d.print_stats

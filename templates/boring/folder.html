@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> <html>
+<head>
+	<title>Photoboxr - <%== @item %></title>
+	<link rel="stylesheet" href="res/common.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="generator" content="photoboxr <%== @version %>" />
+	<meta charset="UTF-8" />
+</head>
+
+<body>
+<% if @item and @item.length > 0
+	parts = @item.split(/\//)
+	link = ("../" * parts.length) + "index.html"
+%>
+<a class='button' href='<%== link %>'>Home</a>
+<%
+	parts.each_with_index do |folder, index|
+		link = ("../" * (parts.length - index - 1)) + "index.html"
+%>
+<a class='button' href='<%== link %>'><%== folder %></a>
+<% end %>
+<% end %>
+<center>
+<% if @subdirs.length > 0 %>
+<div id='subdirs' class='box'>
+	<% for subdir in @subdirs %>
+	<div class='folder'>
+		<a href="<%= URI.escape(subdir.basename) %>/index.html">
+			<img src="<%= URI.escape("#{subdir.basename}/#{subdir.image}") %>" />
+			<br/>
+			<%== subdir.basename %>
+		</a>
+	</div>
+	<% end %>
+</div>
+<br/>
+<% end %>
+<% if @images.length > 0 %>
+<div id='images' class='box'>
+	<% for image in @images %>
+	<div class='image'>
+		<a href="<%= URI.escape(image.destname) %>.html">
+			<img src="thumb/<%= URI.escape(image.thumbname) %>" />
+			<br/>
+			<%== image.basename %>
+		</a>
+	</div>
+	<% end %>
+</div>
+<br/>
+<% end %>
+<% if @videos.length > 0 %>
+<div id='videos' class='box'>
+	<% for video in @videos %>
+	<div class='video'>
+		<a href="<%= URI.escape(video.destname) %>.html">
+			<img src="thumb/<%= URI.escape(video.thumbname) %>" />
+			<br/>
+			<%== video.basename %>
+		</a>
+	</div>
+	<% end %>
+</div>
+<br/>
+<% end %>
+<% if @notes.length > 0 %>
+<div id='documents' class='box'>
+	<% for note in @notes %>
+	<div class='document'>
+		<a href="<%= URI.escape(note.destname) %>.html">
+			<img src="thumb/<%= URI.escape(note.thumbname) %>">
+			<br/>
+			<%== note.basename %>
+		</a>
+	</div>
+	<% end %>
+</div>
+<% end %>
+</center>
+</body>
+</html>

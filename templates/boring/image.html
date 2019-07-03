@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> <html>
+<head>
+	<title>Photoboxr - <%== @item %></title>
+	<link rel="stylesheet" href="res/common.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="generator" content="photoboxr <%== @version %>" />
+	<meta charset="UTF-8" />
+  <script type='text/javascript' src='res/swipe.js'></script>
+  <script type='text/javascript'>
+    window.onload = function(e) {
+      console.log('onload');
+      <% if @next %>
+      setCallback('right', "<%= URI.escape(@next) %>.html");
+      <% end %>
+      <% if @prev %>
+      setCallback('left', "<%= URI.escape(@prev) %>.html");
+      <% end %>
+      <% if @up %>
+      setCallback('up', "<%= URI.escape(@up) %>");
+      <% end %>
+    }
+    document.addEventListener("DOMContentLoaded", function(event) {
+       document.querySelectorAll('img').forEach(function(img){
+      	img.onerror = function() {
+          this.src = 'res/album.png';
+        };
+       })
+    });
+  </script>
+</head>
+
+<body>
+<center>
+<a class='button' href="<%= URI.escape(@up) %>">Up</a>
+<% if @prev %>
+<a class='button' href="<%= URI.escape(@prev) %>.html">Prev</a>
+<% else %>
+<a class='button_disabled'>Prev</a>
+<% end %>
+<% if @next %>
+<a class='button' href="<%= URI.escape(@next) %>.html">Next</a>
+<% else %>
+<a class='button_disabled'>Next</a>
+<% end %>
+<br/>
+<div id='main_element_div' ontouchstart="touchStart(event,'main_element_div');"  ontouchend="touchEnd(event);" ontouchmove="touchMove(event);" ontouchcancel="touchCancel(event);" >
+<img class='main_image' src="<%= URI.escape(@item) %>" alt='<%== @item %>'>
+</div>
+<h1><%== @item %></h1>
+
+<table class='metadata'>
+	<tr><th>Taken</th><td><%== @metadata['datetime'] %></td></tr>
+	<tr><th>Camera</th><td><%== @metadata['camera'] %></td></tr>
+	<tr><th>ISO</th><td><%== @metadata['iso'] %></td></tr>
+	<tr><th>Flash</th><td><%== @metadata['flash'] %></td></tr>
+	<tr><th>Aperture</th><td><%== @metadata['aperture'] %></td></tr>
+	<tr><th>Exposure bias</th><td><%== @metadata['exposure_bias'] %></td></tr>
+	<tr><th>Exposure time</th><td><%== @metadata['exposure_time'] %></td></tr>
+	<tr><th>Focal length</th><td><%== @metadata['focal_length'] %></td></tr>
+</table>
+</center>
+</body>
+</html>

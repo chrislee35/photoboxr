@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> <html>
+<head>
+	<title>Photoboxr - <%== @item %></title>
+	<link rel="stylesheet" href="res/common.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="generator" content="photoboxr <%== @version %>" />
+	<meta charset="UTF-8" />
+  <script type='text/javascript' src='res/swipe.js'></script>
+  <script type='text/javascript'>
+    document.onload = function() {
+      <% if @next %>
+      leftCallback = function() {
+        window.location = "<%= URI.escape(@next) %>.html";
+      };
+      <% end %>
+      <% if @prev %>
+      rightCallback = function() {
+        window.location = "<%= URI.escape(@prev) %>.html";
+      };
+      <% end %>
+      <% if @up %>
+      upCallback = function() {
+        window.location = "<%= URI.escape(@up) %>"
+      };
+      <% end %>      
+    }
+  </script>
+</head>
+
+<body>
+<center>
+<a class='button' href="<%= URI.escape(@up) %>">Up</a>
+<% if @prev %>
+<a class='button' href="<%= URI.escape(@prev) %>.html">Prev</a>
+<% end %>
+<% if @next %>
+<a class='button' href="<%= URI.escape(@next) %>.html">Next</a>
+<% end %>
+<br/>
+
+<div id='main_element_div' ontouchstart="touchStart(event,'main_element_div');"  ontouchend="touchEnd(event);" ontouchmove="touchMove(event);" ontouchcancel="touchCancel(event);" >
+
+<video width="320" height="240" controls>
+	<% if @item =~ /\.mp4/i %>
+	<source src="<%= URI.escape(@item) %>" type="video/mp4">
+	<% elsif @item =~ /\.ogg/i %>
+	<source src="<%= URI.escape(@item) %>" type="video/ogg">
+	<% elsif @item =~ /\.webm/i %>
+	<source src="<%= URI.escape(@item) %>" type="video/webm">
+	<% end %>
+Your browser does not support the video tag.
+</video>
+
+</div>
+
+<h1><%== @item %></h1>
+
+<table class='metadata'>
+	<tr><th>Format</th><td><%== @metadata['format']['format_long_name'] %></td></tr>
+	<tr><th>Duration</th><td><%== @metadata['format']['duration'] %></td></tr>
+	<tr><th>Size</th><td><%== @metadata['format']['size'] %></td></tr>
+</table>
+
+<table class='metadata'>
+	<tr><th>Stream</th><th>CODEC</th></tr>
+	<% @metadata['streams'].each do |stream| %>
+	<tr><td><%== stream['index'] %></td><td><%== stream['codec_long_name'] %></td></tr>
+	<% end %>
+</table>
+
+
+</center>
+</body>
+</html>
