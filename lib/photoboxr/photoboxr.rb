@@ -171,7 +171,7 @@ module PhotoBoxr
       'process_videos' => true,
       'process_notes' => true,
       'print_item' => false,
-      'print_directory' => true,
+      'print_directory' => false,
     }
 
 		def initialize(inputroot, outputroot, fullpath)
@@ -193,7 +193,7 @@ module PhotoBoxr
 			# enumerate all the subdirs, images, videos, and notes in the folder
 			enumerate
 			# select the icon image for this folder
-			puts(select_folder_image)
+			select_folder_image
 		end
     
     def self.set_config(key, value)
