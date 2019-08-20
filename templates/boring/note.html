@@ -43,9 +43,19 @@
 <% end %>
 <br/>
 <div id='main_element_div' ontouchstart="touchStart(event,'main_element_div');"  ontouchend="touchEnd(event);" ontouchmove="touchMove(event);" ontouchcancel="touchCancel(event);" >
-<a href="<%= URI.escape(@item) %>" alt='<%== @item %>'>Download</a>
 </div>
 
 <h1><%== @item %></h1>
+<a href="<%= URI.escape(@item) %>" alt='<%== @item %>' class='button'>Download</a>
+<br/>
+<br/>
+<br/>
+<table class='metadata'>
+	<tr><th>Magic</th><td><%== @metadata['magic'] %></td></tr>
+	<tr><th>Size</th><td><%== @metadata['stat'].size %></td></tr>
+	<tr><th>Created</th><td><%== @metadata['stat'].ctime %></td></tr>
+	<tr><th>Modified</th><td><%== @metadata['stat'].mtime %></td></tr>
+</table>
+</center>
 </body>
 </html>

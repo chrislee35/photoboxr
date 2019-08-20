@@ -1,89 +1,37 @@
 #!/usr/bin/env ruby
 require 'photoboxr'
-require 'getoptlong'
+require 'slop'
 
-def usage
-  puts "Usage: #{ARGV[0]} [-h|-n|-N|-v|-V|-x] -i <indir> -o <outdir> [-t <template>]"
-  puts "-h             Help"
-  puts "-i <indir>     Directories to find media"
-  puts "-o <outdir>    Directory to build web pages and thumbnails into"
-  puts "-t <template>  Template to use for building site, defaults to 'boring'"
-  puts "-x             Turns off the processing of photos"
-  puts "-n             Turns off processing of notes"
-  puts "-N             Turns off the processing of videos"
-  puts "-v             Prints each directory processed"
-  puts "-V             Prints each photo, video, or note processed"
-  exit
+opts = Slop::Options.new
+opts.banner = "usage: photoboxr [options] ..."
+opts.separator ""
+opts.separator "Command line options:"
+opts.bool "-h", "--help", "Help" do 
+    puts opts
+    exit
 end
-
-opts = GetoptLong.new(
-  [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
-  [ '--indir', '-i', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--outdir', '-o', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--template', '-t', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--nophotos', '-x', GetoptLong::NO_ARGUMENT ],
-  [ '--novideo', '-N', GetoptLong::NO_ARGUMENT ],
-  [ '--nonotes', '-n', GetoptLong::NO_ARGUMENT ],
-  [ '--printdirectory', '-v', GetoptLong::NO_ARGUMENT ],
-  [ '--printitems', '-V', GetoptLong::NO_ARGUMENT ],
-)
-
-help = false
-indir = nil
-outdir = nil
-template = 'boring'
-nophotos = false
-novideo = false
-nonotes = false
-printdirectory = false
-printitems = false
-
-opts.each do |opt, arg|
-  case opt
-  when '--help'
-    usage
-  when '--indir'
-    indir = arg
-  when '--outdir'
-    outdir = arg
-  when '--template'
-    template = arg
-  when '--nophotos'
-    nophotos = true
-  when '--novideo'
-    novideo = true
-  when '--nonotes'
-    nonotes = true
-  when '--printdirectory'
-    printdirectory = true
-  when '--printitems'
-    printitems = true
-  else
-    usage
-  end
+opts.string "-i", "--indir", "Directories to find media", required: true
+opts.string "-o", "--outdir", "Directory to build web pages and thumbnails into", required: true
+opts.string "-t", "--template", "Template to use for building site, defaults to 'boring'", default: 'boring'
+opts.bool "-x", "--no-photos", "Turns off the processing of photos" do
+    PhotoBoxr::Directory.set_config('process_photos', false)
+end
+opts.bool "-N", "--no-videos", "Turns off the processing of videos" do
+    PhotoBoxr::Directory.set_config('process_videos', false)
+end
+opts.bool "-n", "--no-notes", "Turns off the processing of notes" do
+    PhotoBoxr::Directory.set_config('process_notes', false)
+end
+opts.bool "-v", "--printdirectory", "Prints each directory processed" do
+    PhotoBoxr::Directory.set_config('print_directory', true)
+end
+opts.bool "-V", "--printitems", "Prints each photo, video, or note processed" do
+    PhotoBoxr::Directory.set_config('print_item', true)
 end
 
-unless indir and outdir
-  usage
-end
-
-if nophotos
-  PhotoBoxr::Directory.set_config('process_photos', false)
-end
-if novideo
-  PhotoBoxr::Directory.set_config('process_videos', false)
-end
-if nonotes
-  PhotoBoxr::Directory.set_config('process_notes', false)
-end
-if printdirectory
-  PhotoBoxr::Directory.set_config('print_directory', true)
-end
-if printitems
-  PhotoBoxr::Directory.set_config('print_item', true)
-end
-
-d = PhotoBoxr::Directory.new(indir, outdir, indir)
-templates = PhotoBoxr::TemplateManager.get_templates(template)
+parser = Slop::Parser.new(opts)
+result = parser.parse(ARGV)
+d = PhotoBoxr::Directory.new(result[:indir], result[:outdir], result[:indir])
+templates = PhotoBoxr::TemplateManager.get_templates(result[:template])
 d.generate(templates)
 d.print_stats

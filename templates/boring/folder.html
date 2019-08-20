@@ -26,7 +26,7 @@
 	<% for subdir in @subdirs %>
 	<div class='folder'>
 		<a href="<%= URI.escape(subdir.basename) %>/index.html">
-			<img src="<%= URI.escape("#{subdir.basename}/#{subdir.image}") %>" />
+			<img src="<%= URI.escape("#{subdir.basename}/#{subdir.image}") %>" width="100" />
 			<br/>
 			<%== subdir.basename %>
 		</a>
@@ -68,7 +68,7 @@
 	<% for note in @notes %>
 	<div class='document'>
 		<a href="<%= URI.escape(note.destname) %>.html">
-			<img src="thumb/<%= URI.escape(note.thumbname) %>">
+			<img src="res/note.png">
 			<br/>
 			<%== note.basename %>
 		</a>

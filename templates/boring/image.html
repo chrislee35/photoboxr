@@ -5,28 +5,28 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta name="generator" content="photoboxr <%== @version %>" />
 	<meta charset="UTF-8" />
-  <script type='text/javascript' src='res/swipe.js'></script>
-  <script type='text/javascript'>
-    window.onload = function(e) {
-      console.log('onload');
-      <% if @next %>
-      setCallback('right', "<%= URI.escape(@next) %>.html");
-      <% end %>
-      <% if @prev %>
-      setCallback('left', "<%= URI.escape(@prev) %>.html");
-      <% end %>
-      <% if @up %>
-      setCallback('up', "<%= URI.escape(@up) %>");
-      <% end %>
-    }
-    document.addEventListener("DOMContentLoaded", function(event) {
-       document.querySelectorAll('img').forEach(function(img){
-      	img.onerror = function() {
-          this.src = 'res/album.png';
-        };
-       })
-    });
-  </script>
+	<script type='text/javascript' src='res/swipe.js'></script>
+	<script type='text/javascript'>
+		window.onload = function(e) {
+			console.log('onload');
+			<% if @next %>
+			setCallback('right', "<%= URI.escape(@next) %>.html");
+			<% end %>
+			<% if @prev %>
+			setCallback('left', "<%= URI.escape(@prev) %>.html");
+			<% end %>
+			<% if @up %>
+			setCallback('up', "<%= URI.escape(@up) %>");
+			<% end %>
+		}
+		document.addEventListener("DOMContentLoaded", function(event) {
+			 document.querySelectorAll('img').forEach(function(img){
+				img.onerror = function() {
+					this.src = 'res/album.png';
+				};
+			 })
+		});
+	</script>
 </head>
 
 <body>
@@ -43,20 +43,45 @@
 <a class='button_disabled'>Next</a>
 <% end %>
 <br/>
-<div id='main_element_div' ontouchstart="touchStart(event,'main_element_div');"  ontouchend="touchEnd(event);" ontouchmove="touchMove(event);" ontouchcancel="touchCancel(event);" >
+<div id='main_element_div' ontouchstart="touchStart(event,'main_element_div');"	ontouchend="touchEnd(event);" ontouchmove="touchMove(event);" ontouchcancel="touchCancel(event);" >
 <img class='main_image' src="<%= URI.escape(@item) %>" alt='<%== @item %>'>
 </div>
 <h1><%== @item %></h1>
 
 <table class='metadata'>
+	<% if @metadata['format'] %>
+	<tr><th>Format</th><td><%== @metadata['format'] %></td></tr>
+	<% end %>
+	<% if @metadata['size'] %>
+	<tr><th>File Size</th><td><%== @metadata['size'] %></td></tr>
+	<% end %>
+	<% if @metadata['width'] %>
+	<tr><th>Image Size</th><td><%== @metadata['width'] %>x<%== @metadata['height'] %></td></tr>
+	<% end %>
+	<% if @metadata['datetime'] %>
 	<tr><th>Taken</th><td><%== @metadata['datetime'] %></td></tr>
+	<% end %>
+	<% if @metadata['camera'] and @metadata['camera'].length > 2 %>
 	<tr><th>Camera</th><td><%== @metadata['camera'] %></td></tr>
+	<% end %>
+	<% if @metadata['iso'] %>
 	<tr><th>ISO</th><td><%== @metadata['iso'] %></td></tr>
+	<% end %>
+	<% if @metadata['flash'] %>
 	<tr><th>Flash</th><td><%== @metadata['flash'] %></td></tr>
+	<% end %>
+	<% if @metadata['aperture'] %>
 	<tr><th>Aperture</th><td><%== @metadata['aperture'] %></td></tr>
+	<% end %>
+	<% if @metadata['exposure_bias'] %>
 	<tr><th>Exposure bias</th><td><%== @metadata['exposure_bias'] %></td></tr>
+	<% end %>
+	<% if @metadata['exposure_time'] %>
 	<tr><th>Exposure time</th><td><%== @metadata['exposure_time'] %></td></tr>
+	<% end %>
+	<% if @metadata['focal_length'] %>
 	<tr><th>Focal length</th><td><%== @metadata['focal_length'] %></td></tr>
+	<% end %>
 </table>
 </center>
 </body>
