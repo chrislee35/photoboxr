@@ -2,10 +2,12 @@ require 'fileutils'
 require 'erubis'
 require 'uri'
 require 'json'
-#require 'concurrent'
+require 'concurrent'
 require 'exifr/jpeg'
 require 'image_size'
 require 'human_size'
+require 'RMagick'
+include Magick
 
 # TODO
 # Regenerate html documents when the template updates
@@ -14,12 +16,12 @@ class Erubis::Eruby
     attr_accessor :mtime
 end
 
-# $pool = Concurrent::ThreadPoolExecutor.new(
-#     :min_threads => [2, Concurrent.processor_count].max,
-#     :max_threads => [2, Concurrent.processor_count].max,
-#     :max_queue   => [2, Concurrent.processor_count].max * 5,
-#     :fallback_policy => :caller_runs
-# )
+$pool = Concurrent::ThreadPoolExecutor.new(
+    :min_threads => [2, Concurrent.processor_count].max,
+    :max_threads => [2, Concurrent.processor_count].max,
+    :max_queue   => [2, Concurrent.processor_count].max * 5,
+    :fallback_policy => :caller_runs
+)
 
 module PhotoBoxr
     VERSION = "0.0.2"
@@ -43,14 +45,14 @@ module PhotoBoxr
         def generate_webpage(template, n, p)
             htmlfile = "#{@dest}.html"
             if not File.exists?(htmlfile) or @mtime > File.stat(htmlfile).mtime or template.mtime > File.stat(htmlfile).mtime
-                #$pool.post do
+                $pool.post do
                     generate_metadata
                     context = Erubis::Context.new(:up => 'index.html', :item => @destname, :next => n && n.destname, :prev => p && p.destname, :metadata => @metadata, :version => PhotoBoxr::VERSION)
                     html = template.evaluate(context)
                     File.open(htmlfile,"w") do |of|
                         of.puts(html)
                     end
-                    #end
+                end
                 return true
             end
             false
@@ -63,10 +65,9 @@ module PhotoBoxr
     class Image < Item
         def generate_thumbnail
             if not File.exists?(@thumbnail) or @mtime > File.stat(@thumbnail).mtime
-                #$pool.post do
-                # the [0] converts just the first frame of a multipage/multiframe image
-                    `convert -auto-orient -thumbnail 100x100 "#{@source}[0]" "#{@thumbnail}"`
-                    #end
+                $pool.post do
+                    ImageList.new(@source).resize_to_fill(100, 100).write(@thumbnail)
+                end
                 return true
             end
             false
@@ -74,11 +75,12 @@ module PhotoBoxr
         
         def generate_dest
             if not File.exists?(@dest) or @mtime > File.stat(@dest).mtime
-                if @source[-3..-1] == @dest[-3..-1]
-                    `ln "#{@source}" "#{@dest}"`
-                else
-                    puts "converting #{@source} to #{@dest}"
-                    `convert "#{@source}[0]" "#{@dest}"`
+                $pool.post do
+                    if @dest.end_with?(".svg")
+                        FileUtils.ln(@source, @dest)
+                    else
+                        ImageList.new(@source).resize_to_fit(800, 800).write(@dest)
+                    end
                 end
                 return true
             end
@@ -150,9 +152,9 @@ module PhotoBoxr
     class Video < Item
         def generate_thumbnail
             if not File.exists?(@thumbnail) or File.stat(@source).mtime > File.stat(@thumbnail).mtime
-                #$pool.post do
+                $pool.post do
                     `ffmpeg -i "#{@source}" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 100x100 "#{@thumbnail}"`
-                    #end
+                end
                 return true
             end
             false
@@ -189,7 +191,7 @@ module PhotoBoxr
         
         def generate_dest
             if not File.exists?(@dest) or File.stat(@source).mtime > File.stat(@dest).mtime
-                `cp "#{@source}" "#{@dest}"`
+                FileUtils.ln(@source, @dest)
                 return true
             end
             false
@@ -218,6 +220,15 @@ module PhotoBoxr
                 'resource' => 0
             },
             'generated' => {
+                'folder' => 0,
+                'image' => 0,
+                'video' => 0,
+                'note' => 0,
+                'thumbnail' => 0,
+                'resource' => 0,
+                'dest' => 0
+            },
+            'completed' => {
                 'folder' => 0,
                 'image' => 0,
                 'video' => 0,
@@ -326,17 +337,16 @@ module PhotoBoxr
                     end
                 elsif f =~ /\.(jpg|gif|jpeg|png|tif|tiff|svg|bmp)$/i and @@config['process_photos'] 
                     @@stats['total']['image'] += 1
+                    @@stats['total']['thumbnail'] += 1
                     imgname = "#{@outputroot}/#{@rel}/#{f}"
                     thumbname = "#{@outputroot}/#{@rel}/thumb/#{f}"
                     # convert non-thumbable formats to jpg
                     if f =~ /\.(tiff|svg|bmp)$/i
                         thumbname = "#{@outputroot}/#{@rel}/thumb/#{f}.jpg"
-                        puts "thumbname #{f} -> #{thumbname}"
                     end
                     # convert non-web-viewable formats to jpg
                     if f =~ /\.(tiff|bmp)$/i
                         imgname = "#{@outputroot}/#{@rel}/#{f}.jpg"
-                        puts "imgname #{f} -> #{imgname}"
                     end
                     @images << Image.new("#{@dir}/#{f}", imgname, thumbname)
                     if comments[f]
@@ -344,6 +354,7 @@ module PhotoBoxr
                     end
                 elsif f =~ videore and @@config['process_videos']
                     @@stats['total']['video'] += 1
+                    @@stats['total']['thumbnail'] += 1
                     filename = f.gsub(videore, '.'+@@config['output_video_format'])
                     thumbnail = f.gsub(videore, '.jpg')
                     @videos << Video.new("#{@dir}/#{f}", "#{@outputroot}/#{@rel}/#{filename}", "#{@outputroot}/#{@rel}/thumb/#{thumbnail}")
@@ -352,6 +363,7 @@ module PhotoBoxr
                     end
                 elsif f =~ /\.(txt|rtf|doc|docx|pdf)$/i and @@config['process_notes'] 
                     @@stats['total']['note'] += 1
+                    @@stats['total']['thumbnail'] += 1
                     @notes << Note.new("#{@dir}/#{f}", "#{@outputroot}/#{@rel}/#{f}", "#{@outputroot}/#{@rel}/thumb/#{f}")
                     if comments[f]
                         @notes.last.comment = comments[f]
@@ -409,8 +421,15 @@ module PhotoBoxr
         end
 
         def generate(templates)
-            puts("Generating directory #{@dir}") if @@config['print_directory']
             starttime = Time.now
+            _generate(templates)
+            $pool.shutdown
+            $pool.wait_for_termination
+            @@stats['time']['generate'] = Time.now - starttime
+        end
+
+        def _generate(templates)
+            puts("Generating directory #{@dir}") if @@config['print_directory']
             # let's first check if the output directory exists (added thumb to make sure it's created too)
             if not File.exist?("#{@out}/thumb")
                 # we need to create the directory
@@ -427,7 +446,7 @@ module PhotoBoxr
                 @@stats['total']['resource'] += 1
                 if not File.exists?("#{@out}/res/#{item}") or File.stat("#{templates['res']}/#{item}").mtime > File.stat("#{@out}/res/#{item}").mtime
                     @@stats['generated']['resource'] += 1
-                    `cp "#{templates['res']}/#{item}" "#{@out}/res/#{item}"`
+                    FileUtils.cp("#{templates['res']}/#{item}", "#{@out}/res/#{item}")
                 end
             end
             # if the index.html is missing or if it's older than the source directory
@@ -442,17 +461,15 @@ module PhotoBoxr
                     of.puts(html)
                 end
             end
-                        
+
             _generate_items(templates, 'image', @images)
             _generate_items(templates, 'video', @videos)
             _generate_items(templates, 'note', @notes)
 
             @subdirs.each do |subdir|
-                subdir.generate(templates)
+                subdir._generate(templates)
             end
-            #$pool.shutdown
-            #$pool.wait_for_termination
-            @@stats['time']['generate'] = Time.now - starttime
+            @@stats['completed']['folder'] += 1
         end
 
         def _generate_items(templates, type, items)
@@ -467,13 +484,23 @@ module PhotoBoxr
                 if item.generate_webpage(template, nextf, prev)
                     @@stats['generated'][type] += 1
                 end
-                @@stats['total']['thumbnail'] += 1
+                @@stats['completed'][type] += 1
                 if item.generate_thumbnail
                     @@stats['generated']['thumbnail'] += 1
                 end
+                @@stats['completed']['thumbnail'] += 1
                 if item.generate_dest
                     @@stats['generated']['dest'] += 1
                 end
+                @@stats['completed']['dest'] += 1
+            end
+        end
+        
+        def self.print_stats_in_progress
+            puts "Type       Evaluated Generated Finished"
+            puts "========== ========= ========= ========"
+            ['folder','image','video','note','thumbnail','resource'].each do |type|
+                printf("%#9ss %#9d %#9d %#9d\n", type, @@stats['total'][type] || 0, @@stats['generated'][type], @@stats['completed'][type])
             end
         end
         
